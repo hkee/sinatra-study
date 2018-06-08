@@ -1,5 +1,22 @@
 require 'sinatra'
 require 'sinatra/reloader'
+require 'rest-client'
+require 'json'
+require 'httparty'
+require 'nokogiri'
+require 'uri'
+require 'date'
+require 'csv'
+
+before do
+    p "************"
+    p params
+    p request.path_info #사용자가 요청보낸 경로
+    p request.fullpath # 파라미터까지 포함한 경로
+    
+    
+    p "************"
+end
 
 get '/' do
   'Hello world!aaaaaaa'
@@ -91,3 +108,87 @@ get '/randomgame/:name' do
     erb :randomgame
 end
 
+get '/lotto-sample' do
+@lotto=(1..45).to_a.sample(6).sort
+#@lotto= [15, 17, 6, 40, 23, 39]
+url="http://www.nlotto.co.kr/common.do?method=getLottoNumber&drwNo=809"
+@lotto_info= RestClient.get(url) # json 형식의 데이터임
+@lotto_hash= JSON.parse(@lotto_info)
+    @winner=[]
+@lotto_hash.each do |k,v|
+
+    if k.include?('drwtNo')
+        #배열에 저장
+        @winner << v
+    end
+end
+@matchnum = (@winner&@lotto).length
+@bonusnum = @lotto_hash["bnusNo"]
+@rank =0
+if @matchnum == 3
+    @rank=5
+elsif @matchnum == 4
+    @rank=4
+elsif @matchnum == 5
+    if @lotto.include?(@bonusnum)
+        @rank=2
+    else
+        @rank=3
+    end
+elsif @matchnum == 6
+    @rank=1
+end
+
+
+@result =
+case [@matchnum,@lotto.include?(@bonusnum)]
+when [6,false] then "1등"
+when [5,true] then "2등"
+when [5,false] then "3등"
+when [4,false] then "4등"
+when [3,false] then "5등"
+else "꽝"
+end
+
+erb :lotto 
+end
+
+
+
+get '/form' do
+    erb :form
+end
+
+get '/search' do
+    @keyword = params[:keyword]
+    
+    url ='https://search.naver.com/search.naver?query='
+    
+    #erb :search
+    redirect to (url+@keyword)
+end
+
+get '/opgg' do
+    erb :opgg
+end
+
+get '/opggresult' do
+    url = 'http://www.op.gg/summoner/userName='
+    @userName=params[:userName]
+   @encodeName = URI.encode(@userName)
+   @res=HTTParty.get(url+@encodeName)
+   @doc =Nokogiri::HTML(@res.body)
+   @rank =@doc.css("body > div.l-wrap.l-wrap--summoner > div.l-container > div > div > div.Header > div.Profile > div.Information > div > div > a > span").text
+   @win =@doc.css("#SummonerLayoutContent > div.tabItem.Content.SummonerLayoutContent.summonerLayout-summary > div.SideContent > div.TierBox.Box > div.SummonerRatingMedium > div.TierRankInfo > div.TierInfo > span.WinLose > span.wins").text
+   @lose =@doc.css("#SummonerLayoutContent > div.tabItem.Content.SummonerLayoutContent.summonerLayout-summary > div.SideContent > div.TierBox.Box > div.SummonerRatingMedium > div.TierRankInfo > div.TierInfo > span.WinLose > span.losses").text
+   
+#   File.open('opgg.txt','a+') do |f|
+#       f.write("#{@userName}:#{@win},#{@lose},#{@rank}\n")
+#   end
+
+    CSV.open('opgg.csv','a+') do |c|
+        c << [@userName,@win,@lose,@rank]
+    end
+
+   erb :opggresult 
+end
