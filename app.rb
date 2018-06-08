@@ -74,3 +74,20 @@ get '/lunch-hash' do
     
 end
 
+get '/randomgame/:name' do
+    @name=params[:name]
+    values=['대감집 노비','수랏간 궁녀','왕','각설이','백정','내시']
+    values_img={
+        "대감집 노비"=>"http://mblogthumb1.phinf.naver.net/20160616_84/alsn76_1466069151965H3PuL_JPEG/%C0%CC%B9%CC%C1%F6_49.jpg?type=w2",
+        "수랏간 궁녀"=>"http://img.khan.co.kr/newsmaker/800/104_a.jpg",
+        "왕"=>"http://img.insight.co.kr/static/2016/07/08/700/5E9616UM4J3Q10P105K2.jpg",
+        "각설이"=>"http://image.ohmynews.com/down/images/1/whda2002_287765_1[450126].jpg",
+        "백정"=>"https://ncache.ilbe.com/files/attach/new/20131208/377678/2261605460/2510758368/0487e76f2510a8356e8628f7f2105767.jpg",
+        "내시"=>"http://img.insight.co.kr/static/2018/01/17/700/pawu5k09jy55jz8c13t0.jpg"
+    }
+    @result=values.sample
+    @result_img=values_img[@result]
+    
+    erb :randomgame
+end
+
